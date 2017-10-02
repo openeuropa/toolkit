@@ -57,33 +57,53 @@ class DocGeneratorTask extends \Task
         $project   = $this->getProject();
         $buildList = PhingHelpTask::getBuildList($this->_buildFile);
 
-        $targetsArray      = array();
-        $wrapperTargets    = array();
-        $buildTargets   = array();
-        $callbackTargets   = array();
-        $deprecatedTargets = array();
-        $helperTargets     = array();
+        $targetsArray       = array();
+        $targetsArrays      = array();
+        $wrapperTargets     = array();
+        $buildTargets       = array();
+        $callbackTargets    = array();
+        $deprecatedTargets  = array();
+        $helperTargets      = array();
+
 
         foreach ($buildList as $buildFile => $info) {
             $xml = simplexml_load_file($buildFile);
 
             foreach ($xml->xpath('//target') as $target) {
-                $targetName        = (string) $target->attributes()->name;
-                $targetVisibility  = (string) $target->attributes()->hidden == 'true' ? 'hidden' : 'visible';
-                $targetDescription = (string) $target->attributes()->description;
+                $targetTags = '';
+                // Only tagged targets can be documented.
+                if($target->attributes()->name == 'build-subsite-dist') {
+                    foreach($target->children() as $name => $vallo) {
+                        if ($vallo->attributes()->name == 'tags' ) {
+                            $targetTags = $vallo->attributes()->value;
+                        }
+                    }
+                }
 
-                $targetArray = array(
-                    'name'        => $targetName,
-                    'description' => $targetDescription,
-                    'visibility'  => $targetVisibility,
-                    'buildfile'   => $buildFile,
-                );
+                if (!empty($targetTags)) {
 
-                if (strpos($targetName, "build-") === 0) {
-                        $targetDependenciesString = (string) $target->xpath(
+                    var_dump($targetTags);
+                    
+                    $targetName = (string)$target->attributes()->name;
+                    $targetVisibility = (string)$target->attributes()->hidden
+                    == 'true' ? 'hidden' : 'visible';
+                    $targetDescription = (string)$target->attributes()->description;
+
+
+                    $targetArray = array(
+                        'name' => $targetName,
+                        'description' => $targetDescription,
+                        'visibility' => $targetVisibility,
+                        'buildfile' => $buildFile,
+                        'tags' => $targetTags,
+                    );
+
+
+                    if (strpos($targetName, "build-") === 0) {
+                        $targetDependenciesString = (string)$target->xpath(
                             './@depends'
                         )[0];
-                        $targetDependencies       = explode(
+                        $targetDependencies = explode(
                             ',',
                             str_replace(
                                 ' ',
@@ -96,33 +116,37 @@ class DocGeneratorTask extends \Task
                             $targetDependencies
                         );
                         $targetArray += array(
-                             'dependencies' => $targetDependencies,
-                             'type'         => 'build',
+                            'dependencies' => $targetDependencies,
+                            'type' => 'build',
                         );
-                    if (count($targetDependencies) > 1) {
-                        $targetArray['type'] = 'build';
-                        $buildTargets[]   = $targetName;
+                        if (count($targetDependencies) > 1) {
+                            $targetArray['type'] = 'build';
+                            $buildTargets[] = $targetName;
+                        }
                     }
-                }
 
-                if (count($target->xpath('./replacedby')) == 1) {
-                          $replacedBy = (string) $target->xpath(
-                              './replacedby[1]/@target'
-                          )[0];
-                          $deprecatedTargets[] = $targetName;
-                          $targetArray         = array_merge(
-                              $targetArray,
-                              array(
-                                  'type'        => 'deprecated',
-                                  'description' => $replacedBy,
-                              )
-                          );
-                }
+                    if (count($target->xpath('./replacedby')) == 1) {
+                        $replacedBy = (string)$target->xpath(
+                            './replacedby[1]/@target'
+                        )[0];
+                        $deprecatedTargets[] = $targetName;
+                        $targetArray = array_merge(
+                            $targetArray,
+                            array(
+                                'type' => 'deprecated',
+                                'description' => $replacedBy,
+                            )
+                        );
+                    }
 
-                $callbackTargets = array_unique($callbackTargets);
-                $targetsArray[]  = $targetArray;
+                    $callbackTargets = array_unique($callbackTargets);
+                    $targetsArrays[] = $targetArray;
+                }
             }//end foreach
         }//end foreach
+
+        echo "Found " . count($targetsArrays) . " targets to be documented.";
+
 
         foreach ($targetsArray as $key => $targetArray) {
             if (in_array($targetArray['name'], $callbackTargets) && !in_array(
@@ -142,10 +166,7 @@ class DocGeneratorTask extends \Task
             $callbackTargets
         );
 
-        file_put_contents(
-          $project->getProperty('build.dir') . "/docs/target-list.md",
-          $targetTable
-        );
+
 
         foreach ($buildList as $buildFile => $info) {
             $depth = ($info['level'] + 1);
@@ -209,7 +230,10 @@ class DocGeneratorTask extends \Task
             }//end if
         }//end foreach
 
-        echo $output;
+        file_put_contents(
+            $project->getProperty('toolkit.dir') . "/docs/target-list.md",
+            $output
+        );
 
     }//end main()
 

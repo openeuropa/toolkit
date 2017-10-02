@@ -22,6 +22,7 @@
             subsite-delete,
             subsite-resources-copy,
             subsite-package">
+        <property name="tags" value="subsite" />
         <echo msg="Playbook for build-subsite-dist ended." />
     </target>
 
