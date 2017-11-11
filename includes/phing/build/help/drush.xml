@@ -163,7 +163,7 @@
             <option name="account-name" value="${admin.username}" />
             <option name="account-pass" value="${admin.password}" />
             <option name="account-mail" value="${admin.email}" />
-            <param>${profile}</param>
+            <param>${profile.secondary}</param>
             <param>install_configure_form.update_status_module='array(FALSE,FALSE)'
             </param>
         </drush>

@@ -245,6 +245,7 @@ admin.username = admin
 # Platform configuration. (deploy props?)
 # -----------------------
 profile = multisite_drupal_standard
+profile.secondary = ${profile}
 profile.core = 7.x
 profile.core.make = ${resources.dir}/drupal-core.make
 profile.make = ${resources.dir}/${profile}.make
