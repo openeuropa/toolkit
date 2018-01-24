@@ -11,7 +11,6 @@
             platform-profiles-link,
             platform-profiles-make,
             platform-resources-link,
-            build-theme-dev,
             project-platform-composer-no-dev,
             project-modules-devel-make,
             project-platform-set-htaccess,
